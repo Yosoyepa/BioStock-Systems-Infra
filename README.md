@@ -25,7 +25,7 @@ El proyecto implementa el patrón de Diseño Orientado a Dominios (Domain-Driven
 
 1. **Clonar el repositorio y entrar al directorio:**
    ```bash
-   git clone <repo-url>
+   git clone [BioStock-Systems-Infra](https://github.com/Yosoyepa/BioStock-Systems-Infra.git)
    cd BioStock-Infra
    ```
 
