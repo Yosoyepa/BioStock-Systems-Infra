@@ -1,19 +1,27 @@
 """
 Punto de entrada (Orchestrator) de la infraestructura BioStock.
 
-Instancia y vincula los 5 stacks modulares inyectando las dependencias
+Instancia y vincula los 6 stacks modulares inyectando las dependencias
 necesarias entre ellos. Cada stack se despliega en ``us-east-1`` dentro
 de la Capa Gratuita de AWS.
+
+La configuración específica de cada microservicio (variables de entorno,
+secretos, rutas del ALB) se declara aquí, manteniendo los stacks
+agnósticos y reutilizables (Principio Abierto/Cerrado).
 """
 
 import aws_cdk as cdk
+from aws_cdk import aws_ecs as ecs
 
-from bio_stock_infra.network_stack import NetworkStack
-from bio_stock_infra.data_stack import DataStack
-from bio_stock_infra.messaging_stack import MessagingStack
-from bio_stock_infra.compute_stack import ComputeStack
-from bio_stock_infra.cdn_stack import CdnStack
-from bio_stock_infra.serverless_stack import ServerlessStack
+from bio_stock_infra.stacks import (
+    NetworkStack,
+    DataStack,
+    MessagingStack,
+    ComputeStack,
+    CdnStack,
+    ServerlessStack,
+)
+from bio_stock_infra.models import MicroserviceProps
 
 app = cdk.App()
 
@@ -34,7 +42,7 @@ data = DataStack(
 # 3. Messaging (SNS, SQS) – independiente
 messaging = MessagingStack(app, "BioStock-Messaging", env=_env)
 
-# 4. Compute (ECR, ECS, ALB) – depende de Network
+# 4. Compute (ECR, ECS Cluster, ALB) – depende de Network
 compute = ComputeStack(
     app,
     "BioStock-Compute",
@@ -42,6 +50,70 @@ compute = ComputeStack(
     ecs_sg=network.ecs_sg,
     alb_sg=network.alb_sg,
     env=_env,
+)
+
+# ── Microservicios ECS (declaración explícita por servicio) ──────────
+
+# 4a. User Service – requiere PostgreSQL
+compute.add_microservice(
+    "user",
+    props=MicroserviceProps(
+        path_pattern="/api/users/*",
+        priority=1,
+        environment={
+            "SPRING_DATASOURCE_URL": (
+                f"jdbc:postgresql://"
+                f"{data.postgres_db.db_instance_endpoint_address}:5432/postgres"
+            ),
+        },
+        secrets={
+            "SPRING_DATASOURCE_USERNAME": ecs.Secret.from_secrets_manager(
+                data.postgres_db.secret, "username"
+            ),
+            "SPRING_DATASOURCE_PASSWORD": ecs.Secret.from_secrets_manager(
+                data.postgres_db.secret, "password"
+            ),
+        },
+    )
+)
+
+# 4b. Product Service – requiere DynamoDB
+compute.add_microservice(
+    "product",
+    props=MicroserviceProps(
+        path_pattern="/api/products/*",
+        priority=2,
+        environment={
+            "AWS_DYNAMODB_TABLENAME": data.dynamo_table.table_name,
+        },
+    )
+)
+
+# 4c. Auth Service
+compute.add_microservice(
+    "auth",
+    props=MicroserviceProps(
+        path_pattern="/api/auth/*",
+        priority=3,
+    )
+)
+
+# 4d. Order Service
+compute.add_microservice(
+    "order",
+    props=MicroserviceProps(
+        path_pattern="/api/orders/*",
+        priority=4,
+    )
+)
+
+# 4e. Shipping Service
+compute.add_microservice(
+    "shipping",
+    props=MicroserviceProps(
+        path_pattern="/api/shipping/*",
+        priority=5,
+    )
 )
 
 # 5. CDN (S3, CloudFront) – independiente
@@ -52,7 +124,7 @@ serverless = ServerlessStack(
     app,
     "BioStock-Serverless",
     queues=messaging.queues,
-    env=_env
+    env=_env,
 )
 
 app.synth()
