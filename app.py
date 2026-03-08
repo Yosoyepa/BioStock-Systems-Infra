@@ -1,28 +1,49 @@
-#!/usr/bin/env python3
-import os
+"""
+Punto de entrada (Orchestrator) de la infraestructura BioStock.
+
+Instancia y vincula los 5 stacks modulares inyectando las dependencias
+necesarias entre ellos. Cada stack se despliega en ``us-east-1`` dentro
+de la Capa Gratuita de AWS.
+"""
 
 import aws_cdk as cdk
 
-from bio_stock_infra.bio_stock_infra_stack import BioStockInfraStack
-
+from bio_stock_infra.network_stack import NetworkStack
+from bio_stock_infra.data_stack import DataStack
+from bio_stock_infra.messaging_stack import MessagingStack
+from bio_stock_infra.compute_stack import ComputeStack
+from bio_stock_infra.cdn_stack import CdnStack
 
 app = cdk.App()
-BioStockInfraStack(app, "BioStockInfraStack",
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
 
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
+_env = cdk.Environment(region="us-east-1")
 
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
+# 1. Network (VPC, Security Groups) – fundación de todos los demás stacks
+network = NetworkStack(app, "BioStock-Network", env=_env)
 
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
+# 2. Data (RDS PostgreSQL, RDS SQL Server, DynamoDB) – depende de Network
+data = DataStack(
+    app,
+    "BioStock-Data",
+    vpc=network.vpc,
+    db_sg=network.db_sg,
+    env=_env,
+)
 
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
+# 3. Messaging (SNS, SQS) – independiente
+messaging = MessagingStack(app, "BioStock-Messaging", env=_env)
 
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
+# 4. Compute (ECR, ECS, ALB) – depende de Network
+compute = ComputeStack(
+    app,
+    "BioStock-Compute",
+    vpc=network.vpc,
+    ecs_sg=network.ecs_sg,
+    alb_sg=network.alb_sg,
+    env=_env,
+)
+
+# 5. CDN (S3, CloudFront) – independiente
+cdn = CdnStack(app, "BioStock-Cdn", env=_env)
 
 app.synth()
