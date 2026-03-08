@@ -1,58 +1,69 @@
+# BioStock Infrastructure (AWS CDK)
 
-# Welcome to your CDK Python project!
+Este repositorio contiene la Infraestructura como Código (IaC) para el proyecto **BioStock**, implementada íntegramente de forma modular usando **AWS CDK v2 (Python)**. 
 
-This is a blank project for CDK development with Python.
+La arquitectura está diseñada para ser **100% Free Tier** y **totalmente efímera**, lo que la hace ideal para entornos de desarrollo, pruebas y presentaciones breves sin incurrir en costos.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## 🏗️ Arquitectura Modular
 
-This project is set up like a standard Python project.  The initialization
-process also creates a virtualenv within this project, stored under the `.venv`
-directory.  To create the virtualenv it assumes that there is a `python3`
-(or `python` for Windows) executable in your path with access to the `venv`
-package. If for any reason the automatic creation of the virtualenv fails,
-you can create the virtualenv manually.
+El proyecto implementa el patrón de Diseño Orientado a Dominios (Domain-Driven Design), dividiendo el tradicional monolito en 5 Stacks granulares e independientes que se comunican inyectando dependencias.
 
-To manually create a virtualenv on MacOS and Linux:
+1. **`BioStock-Network`**: Crea la VPC ($0 costo, sin NAT Gateways) y los Security Groups aplicando el principio de menor privilegio.
+2. **`BioStock-Data`**: Provisión de las bases de datos efímeras (RDS PostgreSQL, RDS SQL Server Express) y almacenamiento On-Demand (DynamoDB).
+3. **`BioStock-Messaging`**: Patrón Fan-out asíncrono usando un Topic SNS y colas SQS.
+4. **`BioStock-Compute`**: Cómputo orquestado en ECS sobre una instancia `t2.micro` (Free Tier), repositorios ECR para 6 microservicios y un Application Load Balancer (ALB).
+5. **`BioStock-Cdn`**: Almacenamiento S3 y distribución global mediante CloudFront con Origin Access Control (OAC) para el Frontend (SPA).
 
+## 🚀 Requisitos Previos
+
+- [Node.js](https://nodejs.org/) (para usar AWS CDK CLI)
+- [Python 3.9+](https://www.python.org/downloads/)
+- [AWS CLI](https://aws.amazon.com/cli/) instalado y configurado con credenciales válidas.
+- [AWS CDK v2](https://docs.aws.amazon.com/cdk/v2/guide/getting_started.html) (`npm install -g aws-cdk`)
+
+## 🛠️ Configuración y Despliegue
+
+1. **Clonar el repositorio y entrar al directorio:**
+   ```bash
+   git clone <repo-url>
+   cd BioStock-Infra
+   ```
+
+2. **Crear y activar el entorno virtual:**
+   ```bash
+   # Linux/macOS/WSL
+   python3 -m venv .venv
+   source .venv/bin/activate
+
+   # Windows
+   .venv\Scripts\activate.bat
+   ```
+
+3. **Instalar las dependencias:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Sintetizar la plantilla (Validación):**
+   ```bash
+   cdk synth
+   ```
+
+5. **Desplegar la infraestructura:**
+   ```bash
+   # Despliega todos los stacks de forma ordenada según sus dependencias
+   cdk deploy --all
+   ```
+
+## 🧹 Limpieza (Destrucción Efímera)
+
+Dado que todos los recursos tienen configurada la política `RemovalPolicy.DESTROY`, la limpieza es total y automática. Para evitar cobros, destruye la infraestructura cuando termines:
+
+```bash
+cdk destroy --all
 ```
-$ python3 -m venv .venv
-```
 
-After the init process completes and the virtualenv is created, you can use the following
-step to activate your virtualenv.
+## 📖 Documentación Adicional
 
-```
-$ source .venv/bin/activate
-```
-
-If you are a Windows platform, you would activate the virtualenv like this:
-
-```
-% .venv\Scripts\activate.bat
-```
-
-Once the virtualenv is activated, you can install the required dependencies.
-
-```
-$ pip install -r requirements.txt
-```
-
-At this point you can now synthesize the CloudFormation template for this code.
-
-```
-$ cdk synth
-```
-
-To add additional dependencies, for example other CDK libraries, just add
-them to your `requirements.txt` file and rerun the `python -m pip install -r requirements.txt`
-command.
-
-## Useful commands
-
- * `cdk ls`          list all stacks in the app
- * `cdk synth`       emits the synthesized CloudFormation template
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk docs`        open CDK documentation
-
-Enjoy!
+Por favor revisa la carpeta [`docs/`](./docs) para guías específicas de integración:
+- [Cómo conectar los Microservicios a esta Infraestructura](./docs/microservices_connection.md)
