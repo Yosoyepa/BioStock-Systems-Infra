@@ -38,9 +38,7 @@ class ComputeStack(Stack):
         "auth",
         "product",
         "order",
-        "payment",
         "shipping",
-        "notification",
     ]
 
     def __init__(

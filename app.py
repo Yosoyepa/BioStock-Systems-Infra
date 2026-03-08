@@ -13,6 +13,7 @@ from bio_stock_infra.data_stack import DataStack
 from bio_stock_infra.messaging_stack import MessagingStack
 from bio_stock_infra.compute_stack import ComputeStack
 from bio_stock_infra.cdn_stack import CdnStack
+from bio_stock_infra.serverless_stack import ServerlessStack
 
 app = cdk.App()
 
@@ -45,5 +46,13 @@ compute = ComputeStack(
 
 # 5. CDN (S3, CloudFront) – independiente
 cdn = CdnStack(app, "BioStock-Cdn", env=_env)
+
+# 6. Serverless (AWS Lambda) - depende de Messaging
+serverless = ServerlessStack(
+    app,
+    "BioStock-Serverless",
+    queues=messaging.queues,
+    env=_env
+)
 
 app.synth()
