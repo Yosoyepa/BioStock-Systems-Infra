@@ -5,7 +5,7 @@ Actúa como el equivalente a una Interface/DTO para evitar
 listas largas de argumentos en constructos y funciones.
 """
 
-from typing import Dict
+from typing import Callable, Dict, List
 from dataclasses import dataclass, field
 
 from aws_cdk import aws_ecs as ecs
@@ -20,12 +20,14 @@ class MicroserviceProps:
     de argumentos en constructos y métodos de orquestación.
 
     Attributes:
-        path_pattern: Patrón de URL para el enrutamiento del ALB (ej. /api/users/*).
+        path_patterns: Lista de patrones de URL para el enrutamiento del ALB.
         priority: Prioridad de la regla del listener (debe ser única por servicio).
         container_port: Puerto que expone el contenedor (default: 8080).
         memory_limit_mib: Límite de memoria del contenedor en MiB (default: 256).
         environment: Variables de entorno para inyectar al contenedor.
         secrets: Secretos de ECS (ej. credenciales de base de datos).
+        iam_grants: Lista de callables ``(iam.IRole) -> Grant`` para
+            otorgar permisos al Task Role del contenedor.
     """
 
     path_patterns: list
@@ -35,3 +37,4 @@ class MicroserviceProps:
     health_check_path: str = "/actuator/health"
     environment: Dict[str, str] = field(default_factory=dict)
     secrets: Dict[str, ecs.Secret] = field(default_factory=dict)
+    iam_grants: List[Callable] = field(default_factory=list)

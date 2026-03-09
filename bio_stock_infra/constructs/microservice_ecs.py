@@ -48,6 +48,10 @@ class MicroserviceEcsDeployment(Construct):
         # --- Task Definition ---
         task_def = ecs.Ec2TaskDefinition(self, "TaskDef")
 
+        # --- IAM Grants (ej. DynamoDB, S3, etc.) ---
+        for grant in props.iam_grants:
+            grant(task_def.task_role)
+
         container = task_def.add_container(
             "Container",
             image=ecs.ContainerImage.from_ecr_repository(repo, "latest"),

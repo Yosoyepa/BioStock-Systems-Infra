@@ -90,6 +90,9 @@ compute.add_microservice(
         environment={
             "AWS_DYNAMODB_TABLENAME": data.dynamo_table.table_name,
         },
+        iam_grants=[
+            lambda role: data.dynamo_table.grant_read_write_data(role),
+        ],
     )
 )
 

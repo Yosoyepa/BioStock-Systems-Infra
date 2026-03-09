@@ -30,20 +30,22 @@ class SpringBootLambda(Construct):
         construct_id: str,
         service_name: str,
         queue: sqs.IQueue,
+        jar_version: str = "v2.5.14",
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         # Manejo de rutas multiplataforma con pathlib (Portabilidad)
+        # Resolución: constructs/ → bio_stock_infra/ → BioStock-Systems-Infra/ → BioStock-System/
         base_dir = Path(__file__).resolve().parent.parent.parent.parent
-        jar_path = base_dir / "BioStock-System" / service_name / "target" / f"{service_name}-v0.1.0.jar"
+        jar_path = base_dir / service_name / "target" / f"{service_name}-{jar_version}.jar"
 
         # Determinismo e inyección: evaluamos el estado
         jar_exists = jar_path.exists()
 
         if jar_exists:
             code_asset = _lambda.Code.from_asset(str(jar_path))
-            runtime = _lambda.Runtime.JAVA_17
+            runtime = _lambda.Runtime.JAVA_11
             handler = "com.selimhorri.app.StreamLambdaHandler::handleRequest"
         else:
             code_asset = _lambda.Code.from_inline("def handler(event, context): return 'Missing JAR'")
@@ -56,10 +58,10 @@ class SpringBootLambda(Construct):
             runtime=runtime,
             handler=handler,
             code=code_asset,
-            memory_size=512,
+            memory_size=1024,
             timeout=Duration.seconds(30),
             environment={
-                "SPRING_PROFILES_ACTIVE": "prod",
+                "SPRING_PROFILES_ACTIVE": "lambda",
                 "JAVA_TOOL_OPTIONS": "-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
             }
         )
