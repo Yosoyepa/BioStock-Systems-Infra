@@ -67,3 +67,4 @@ cdk destroy --all
 
 Por favor revisa la carpeta [`docs/`](./docs) para guías específicas de integración:
 - [Cómo conectar los Microservicios a esta Infraestructura](./docs/microservices_connection.md)
+- [Guía de Despliegue de BioStock (Solución a Errores y Arquitectura Serverless)](./docs/DEPLOYMENT_GUIDE.md)
