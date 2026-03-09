@@ -58,8 +58,10 @@ compute = ComputeStack(
 compute.add_microservice(
     "user",
     props=MicroserviceProps(
-        path_pattern="/api/users/*",
+        path_patterns=["/user-service", "/user-service/*"],
         priority=1,
+        memory_limit_mib=400,
+        health_check_path="/user-service/actuator/health",
         environment={
             "SPRING_DATASOURCE_URL": (
                 f"jdbc:postgresql://"
@@ -81,40 +83,16 @@ compute.add_microservice(
 compute.add_microservice(
     "product",
     props=MicroserviceProps(
-        path_pattern="/api/products/*",
+        path_patterns=["/api/products", "/api/products/*"],
         priority=2,
+        memory_limit_mib=400,
+        health_check_path="/actuator/health",
         environment={
             "AWS_DYNAMODB_TABLENAME": data.dynamo_table.table_name,
         },
     )
 )
 
-# 4c. Auth Service
-compute.add_microservice(
-    "auth",
-    props=MicroserviceProps(
-        path_pattern="/api/auth/*",
-        priority=3,
-    )
-)
-
-# 4d. Order Service
-compute.add_microservice(
-    "order",
-    props=MicroserviceProps(
-        path_pattern="/api/orders/*",
-        priority=4,
-    )
-)
-
-# 4e. Shipping Service
-compute.add_microservice(
-    "shipping",
-    props=MicroserviceProps(
-        path_pattern="/api/shipping/*",
-        priority=5,
-    )
-)
 
 # 5. CDN (S3, CloudFront) – independiente
 cdn = CdnStack(app, "BioStock-Cdn", env=_env)

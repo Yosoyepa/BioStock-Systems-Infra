@@ -39,10 +39,7 @@ class ComputeStack(Stack):
     """
 
     _MICROSERVICES: List[str] = [
-        "auth",
         "product",
-        "order",
-        "shipping",
         "user",
     ]
 

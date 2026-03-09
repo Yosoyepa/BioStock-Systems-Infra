@@ -80,9 +80,9 @@ class MicroserviceEcsDeployment(Construct):
                 )
             ],
             health_check=elbv2.HealthCheck(
-                path="/actuator/health",
+                path=props.health_check_path,
                 healthy_http_codes="200",
             ),
-            conditions=[elbv2.ListenerCondition.path_patterns([props.path_pattern])],
+            conditions=[elbv2.ListenerCondition.path_patterns(props.path_patterns)],
             priority=props.priority,
         )

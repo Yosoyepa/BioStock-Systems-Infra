@@ -28,9 +28,10 @@ class MicroserviceProps:
         secrets: Secretos de ECS (ej. credenciales de base de datos).
     """
 
-    path_pattern: str
+    path_patterns: list
     priority: int
     container_port: int = 8080
     memory_limit_mib: int = 256
+    health_check_path: str = "/actuator/health"
     environment: Dict[str, str] = field(default_factory=dict)
     secrets: Dict[str, ecs.Secret] = field(default_factory=dict)

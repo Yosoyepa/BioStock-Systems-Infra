@@ -105,7 +105,7 @@ class NetworkStack(Stack):
             allow_all_outbound=True,
         )
         ecs_sg.add_ingress_rule(
-            alb_sg, ec2.Port.tcp_range(8080, 8085), "Puertos de microservicios"
+            alb_sg, ec2.Port.tcp_range(32768, 65535), "Puertos efimeros para ECS bridge mode"
         )
 
         db_sg = ec2.SecurityGroup(
